@@ -1,0 +1,117 @@
+// Markaba — Phase 1 Prisma schema.
+// GOLDEN RULE (CLAUDE.md §2.2): no real BVNs, credentials, or PII test fixtures here.
+// Sharia-critical fields (contract terms, hiba/ownership-transfer records) are
+// deliberately absent — those need SSB-certified templates first (CLAUDE.md §2.1).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum KycStatus {
+  NOT_STARTED
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum VehicleFinanceType {
+  IJARAH
+  MURABAHA
+}
+
+enum VehicleStatus {
+  SOURCING
+  RESERVED
+  PURCHASE_CONFIRMED
+  ALLOCATED
+  IN_SERVICE
+  REPOSSESSED
+}
+
+enum ApplicationState {
+  SUBMITTED
+  KYC_PENDING
+  OPEN_BANKING_CONSENT
+  UNDERWRITING
+  APPROVED
+  REFERRED
+  DECLINED
+  VEHICLE_SOURCING
+  PURCHASE_CONFIRMED
+  CONTRACT_SIGNED
+  ACTIVE
+  COMPLETED
+  DEFAULTED
+}
+
+model Customer {
+  id                  String        @id @default(uuid())
+  fullName            String
+  phoneNumber         String        @unique
+  email               String?
+  kycStatus           KycStatus     @default(NOT_STARTED)
+  kycProviderReference String?
+  applications        Application[]
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+}
+
+model Vehicle {
+  id                  String              @id @default(uuid())
+  make                String
+  model               String
+  year                Int
+  vin                 String              @unique
+  financeType         VehicleFinanceType
+  priceNaira          Decimal
+  status              VehicleStatus       @default(SOURCING)
+  purchaseReceiptRef  String?
+  purchaseConfirmedAt DateTime?
+  applications        Application[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
+
+model Application {
+  id                   String           @id @default(uuid())
+  customer              Customer         @relation(fields: [customerId], references: [id])
+  customerId            String
+  vehicle               Vehicle?         @relation(fields: [vehicleId], references: [id])
+  vehicleId              String?
+  guarantors             Guarantor[]
+  state                  ApplicationState @default(SUBMITTED)
+  financeType            VehicleFinanceType
+  requestedAmountNaira   Decimal
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+}
+
+model Guarantor {
+  id                       String        @id @default(uuid())
+  application              Application   @relation(fields: [applicationId], references: [id])
+  applicationId            String
+  fullName                  String
+  phoneNumber               String
+  relationshipToApplicant   String
+  kycStatus                 KycStatus     @default(NOT_STARTED)
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+}
+
+/// Append-only. No application code may call update() or delete() on this model
+/// (CLAUDE.md §7 — "Audit logging" convention). Enforced at the service layer in
+/// src/modules/audit/audit.service.ts, not at the DB layer, in Phase 1.
+model AuditLog {
+  id         String   @id @default(uuid())
+  actor      String
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+}

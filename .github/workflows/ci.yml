@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  PROVIDER_MODE: mock
+  DATABASE_URL: postgresql://markaba:markaba@localhost:5432/markaba_dev
+
+jobs:
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan for real credentials / BVNs (CLAUDE.md §2.2)
+        run: bash scripts/secret-scan.sh
+
+  build-and-test:
+    name: Install, lint, typecheck, test
+    runs-on: ubuntu-latest
+    needs: secret-scan
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: markaba
+          POSTGRES_PASSWORD: markaba
+          POSTGRES_DB: markaba_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared domain package
+        run: npm run build --workspace=@markaba/shared
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate --workspace=@markaba/api
+
+      - name: Run Customer/Application migrations against the local DB
+        run: npm run prisma:migrate --workspace=@markaba/api -- --name init
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test with coverage (fails under each package's threshold)
+        run: npm run test:coverage
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            packages/*/coverage
+          retention-days: 14

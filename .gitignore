@@ -1,0 +1,40 @@
+# dependencies
+node_modules/
+
+# env — never commit real secrets
+.env
+.env.local
+.env.*.local
+
+# build output
+dist/
+build/
+.next/
+out/
+
+# test coverage
+coverage/
+
+# logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# React Native
+packages/mobile/ios/Pods/
+packages/mobile/android/.gradle/
+packages/mobile/android/app/build/
+packages/mobile/ios/build/
+*.keystore
+!debug.keystore
+
+# Prisma
+packages/api/prisma/*.db
