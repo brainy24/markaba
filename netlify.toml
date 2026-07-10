@@ -2,9 +2,12 @@
 # app in this npm-workspaces monorepo. packages/api is a NestJS server and
 # packages/mobile is React Native; neither is a Netlify static/SSR target.
 #
-# Install runs at the repo root (not `base`) so npm workspace linking resolves
-# @markaba/shared correctly — see README for the local equivalent.
+# `base` is pinned to the repo root explicitly — this overrides a stray "Base
+# directory: packages/mobile" left over in the Netlify site's dashboard settings
+# from initial repo connection, which otherwise wins by default whenever this file
+# doesn't set `base` itself and doubles every path below.
 [build]
+  base = "."
   command = "npm install && npm run build --workspace=@markaba/admin"
   publish = "packages/admin/.next"
 
