@@ -17,5 +17,11 @@
 [build.environment]
   NODE_VERSION = "20"
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+# No explicit [[plugins]] entry for @netlify/plugin-nextjs: pinning it here
+# locked the build to a stale v4.41.6 runtime (Netlify's own build log flagged
+# this — latest is v5.15.12). Leaving it unset lets Netlify auto-detect Next.js
+# and manage the current runtime itself, which has much better support for App
+# Router Server Actions — the login form's `cookies().set()` + `redirect()`
+# inside a 'use server' action is exactly the kind of thing that improved
+# between those versions, and is the likely cause of Sign in silently failing
+# in production while working fine in local dev.
