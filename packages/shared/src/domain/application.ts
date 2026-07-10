@@ -4,14 +4,28 @@
  * (see state-machine.ts). Nothing in this file executes Sharia-critical or
  * money-moving logic — see CLAUDE.md §2.1 and §2.3.
  */
+import type { CreditScoreResult } from './credit-score';
+
+export type FinanceProduct = 'IJARAH' | 'MURABAHA';
+
 export interface Application {
   id: string;
   customerId: string;
   vehicleId?: string;
   guarantorIds: string[];
   state: ApplicationState;
-  financeType: import('./vehicle').VehicleFinanceType;
-  requestedAmountNaira: number;
+  product: FinanceProduct;
+  financedAmount: number;
+  downPaymentPct: number;
+  termMonths: number;
+  /** Screened against the prohibited-use denylist — see prohibited-use.ts. */
+  declaredVehicleUse: string;
+  /**
+   * The full Phase 1 MCS stub output (score + recommendation + explanation),
+   * not just the enum — the admin explanation view needs the factor breakdown.
+   * Unset until `UNDERWRITING` scores it. Never a binding decision (CLAUDE.md §2.3).
+   */
+  mcsRecommendation?: CreditScoreResult;
   createdAt: Date;
   updatedAt: Date;
 }

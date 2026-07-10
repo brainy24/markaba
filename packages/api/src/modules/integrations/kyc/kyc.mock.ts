@@ -15,7 +15,7 @@ export class MockKycProvider implements KycProvider {
     const isWellFormed = /^\d{11}$/.test(bvn);
     return Promise.resolve({
       status: isWellFormed ? 'VERIFIED' : 'FAILED',
-      providerReference: `mock-smile-identity-${Buffer.from(input.phoneNumber).toString('hex').slice(0, 12)}`,
+      providerReference: `mock-smile-identity-${Buffer.from(input.phone).toString('hex').slice(0, 12)}`,
       verifiedAt: new Date(),
     });
   }

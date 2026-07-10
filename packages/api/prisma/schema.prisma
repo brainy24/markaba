@@ -19,7 +19,19 @@ enum KycStatus {
   FAILED
 }
 
-enum VehicleFinanceType {
+enum LanguagePref {
+  en
+  ha
+}
+
+/// Banking-access tier (PRD A.1.2), not a religious classification.
+enum CustomerSegment {
+  A_faith
+  B_conventional
+  C_informal
+}
+
+enum FinanceProduct {
   IJARAH
   MURABAHA
 }
@@ -49,58 +61,99 @@ enum ApplicationState {
   DEFAULTED
 }
 
+enum ScqStatus {
+  OPEN
+  HEAD_OF_COMPLIANCE_REVIEWED
+  SSB_REVIEWING
+  RULED
+}
+
 model Customer {
-  id                  String        @id @default(uuid())
-  fullName            String
-  phoneNumber         String        @unique
-  email               String?
-  kycStatus           KycStatus     @default(NOT_STARTED)
+  id                   String          @id @default(uuid())
+  displayName          String
+  phone                String          @unique
+  /// Tokenised reference only — never a raw BVN (CLAUDE.md §2.2).
+  bvnRef               String?
+  languagePref         LanguagePref    @default(en)
+  segment              CustomerSegment @default(B_conventional)
+  kycStatus            KycStatus       @default(NOT_STARTED)
   kycProviderReference String?
+  applications         Application[]
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+}
+
+model Vehicle {
+  id                  String        @id @default(uuid())
+  make                String
+  model               String
+  year                Int
+  vin                 String        @unique
+  mileage             Int
+  /// Cars45/Autochek inspection grade — not integrated in Phase 1, entered manually.
+  inspectionGrade     String?
+  marketValuation     Decimal
+  status              VehicleStatus @default(SOURCING)
+  purchaseReceiptRef  String?
+  purchaseConfirmedAt DateTime?
+  /// Set once a GPS tracker is fitted at possession (mock Initrack adapter).
+  gpsImei             String?
   applications        Application[]
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 }
 
-model Vehicle {
-  id                  String              @id @default(uuid())
-  make                String
-  model               String
-  year                Int
-  vin                 String              @unique
-  financeType         VehicleFinanceType
-  priceNaira          Decimal
-  status              VehicleStatus       @default(SOURCING)
-  purchaseReceiptRef  String?
-  purchaseConfirmedAt DateTime?
-  applications        Application[]
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-}
-
 model Application {
-  id                   String           @id @default(uuid())
-  customer              Customer         @relation(fields: [customerId], references: [id])
-  customerId            String
-  vehicle               Vehicle?         @relation(fields: [vehicleId], references: [id])
-  vehicleId              String?
-  guarantors             Guarantor[]
-  state                  ApplicationState @default(SUBMITTED)
-  financeType            VehicleFinanceType
-  requestedAmountNaira   Decimal
-  createdAt              DateTime         @default(now())
-  updatedAt              DateTime         @updatedAt
+  id                  String            @id @default(uuid())
+  customer            Customer          @relation(fields: [customerId], references: [id])
+  customerId          String
+  vehicle             Vehicle?          @relation(fields: [vehicleId], references: [id])
+  vehicleId           String?
+  guarantors          Guarantor[]
+  state               ApplicationState  @default(SUBMITTED)
+  product             FinanceProduct
+  financedAmount      Decimal
+  downPaymentPct      Decimal
+  termMonths          Int
+  /// Screened against the prohibited-use denylist — see @markaba/shared prohibited-use.ts.
+  declaredVehicleUse  String
+  /// Full CreditScoreResult JSON (score + recommendation + explanation), not just
+  /// the enum — the admin explanation view needs the factor breakdown. Never a
+  /// binding decision (CLAUDE.md §2.3).
+  mcsRecommendation   Json?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 }
 
 model Guarantor {
-  id                       String        @id @default(uuid())
-  application              Application   @relation(fields: [applicationId], references: [id])
-  applicationId            String
-  fullName                  String
-  phoneNumber               String
-  relationshipToApplicant   String
-  kycStatus                 KycStatus     @default(NOT_STARTED)
-  createdAt                 DateTime      @default(now())
-  updatedAt                 DateTime      @updatedAt
+  id                      String      @id @default(uuid())
+  application             Application @relation(fields: [applicationId], references: [id])
+  applicationId           String
+  fullName                String
+  phoneNumber             String
+  /// Tokenised reference only — never a raw BVN (CLAUDE.md §2.2).
+  bvnRef                  String?
+  relationshipToCustomer  String
+  kycStatus               KycStatus   @default(NOT_STARTED)
+  confirmedAt             DateTime?
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+}
+
+/// Escalation record for a Sharia-compliance concern (PRD A.3). Every status
+/// change is a manual human action — this model tracks the workflow, it does not
+/// rule on anything (not blocked by CLAUDE.md §2.1).
+model ShariaComplianceQuery {
+  id                          String    @id @default(uuid())
+  raisedBy                    String
+  relatedEntityType           String
+  relatedEntityId             String
+  description                 String
+  status                      ScqStatus @default(OPEN)
+  raisedAt                    DateTime  @default(now())
+  headOfComplianceReviewedAt  DateTime?
+  ssbRuledAt                  DateTime?
+  rulingSummary                String?
 }
 
 /// Append-only. No application code may call update() or delete() on this model

@@ -8,9 +8,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
 
 function renderScreen() {
   const navigation = { navigate: jest.fn() } as unknown as Props['navigation'];
-  const utils = render(
-    <OnboardingScreen navigation={navigation} route={{} as Props['route']} />,
-  );
+  const utils = render(<OnboardingScreen navigation={navigation} route={{} as Props['route']} />);
   return { ...utils, navigation };
 }
 

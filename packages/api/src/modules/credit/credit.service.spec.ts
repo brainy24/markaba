@@ -5,8 +5,8 @@ describe('CreditService', () => {
   const service = new CreditService();
 
   const baseInput: CreditScoringInput = {
-    requestedAmountNaira: 3_600_000,
-    financeType: 'IJARAH',
+    financedAmount: 3_600_000,
+    product: 'IJARAH',
     kycStatus: 'VERIFIED',
     monthlyIncomeNaira: 200_000,
   };

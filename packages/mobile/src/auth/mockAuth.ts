@@ -19,7 +19,10 @@ export async function mockSignIn(phoneNumber: string): Promise<MockSession> {
   if (!isValidPhoneNumber(phoneNumber)) {
     throw new Error('Enter a valid phone number to continue.');
   }
-  const session: MockSession = { phoneNumber: phoneNumber.trim(), signedInAt: new Date().toISOString() };
+  const session: MockSession = {
+    phoneNumber: phoneNumber.trim(),
+    signedInAt: new Date().toISOString(),
+  };
   await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session));
   return session;
 }

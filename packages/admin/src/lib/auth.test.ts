@@ -5,7 +5,9 @@ import {
   decodeSession,
   encodeSession,
   isRole,
+  OPERATIONS_VIEW_ROLES,
   ROLES,
+  SCQ_VIEW_ROLES,
 } from './auth';
 
 describe('isRole', () => {
@@ -48,5 +50,17 @@ describe('canAccess', () => {
   it('denies Operations and CreditAnalyst from the compliance section', () => {
     expect(canAccess('Operations', COMPLIANCE_VIEW_ROLES)).toBe(false);
     expect(canAccess('CreditAnalyst', COMPLIANCE_VIEW_ROLES)).toBe(false);
+  });
+
+  it('allows CEO and Compliance to view the SCQ register', () => {
+    expect(canAccess('CEO', SCQ_VIEW_ROLES)).toBe(true);
+    expect(canAccess('Compliance', SCQ_VIEW_ROLES)).toBe(true);
+    expect(canAccess('Operations', SCQ_VIEW_ROLES)).toBe(false);
+  });
+
+  it('allows CEO and Operations to view the vehicle workflow', () => {
+    expect(canAccess('CEO', OPERATIONS_VIEW_ROLES)).toBe(true);
+    expect(canAccess('Operations', OPERATIONS_VIEW_ROLES)).toBe(true);
+    expect(canAccess('Compliance', OPERATIONS_VIEW_ROLES)).toBe(false);
   });
 });

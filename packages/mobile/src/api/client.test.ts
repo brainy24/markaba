@@ -21,7 +21,9 @@ describe('fetchMyApplications', () => {
   });
 
   it('throws when the API responds with a non-OK status', async () => {
-    globalThis.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 }) as unknown as typeof fetch;
+    globalThis.fetch = jest
+      .fn()
+      .mockResolvedValue({ ok: false, status: 500 }) as unknown as typeof fetch;
     await expect(fetchMyApplications('+2348000000001')).rejects.toThrow(/Failed to load/);
   });
 });

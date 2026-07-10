@@ -1,6 +1,8 @@
 /**
  * Vehicle — the asset underlying an Ijarah (lease-to-own) or Murabaha (cost-plus
- * sale) contract.
+ * sale) contract. The finance product (`IJARAH`/`MURABAHA`) is a property of the
+ * `Application`, not the vehicle itself — the same vehicle could in principle be
+ * financed either way, so `FinanceProduct` lives in `application.ts`.
  *
  * `purchaseReceiptRef` is the verified proof-of-purchase record. Its presence is
  * the precondition the state machine checks before any lease/sale contract may be
@@ -14,22 +16,22 @@ export interface Vehicle {
   model: string;
   year: number;
   vin: string;
-  financeType: VehicleFinanceType;
-  priceNaira: number;
+  mileage: number;
+  /**
+   * Inspection partner's condition grade (Cars45/Autochek). Not integrated in
+   * Phase 1 (PRD A.8) — entered manually by Operations until then.
+   */
+  inspectionGrade?: string;
+  marketValuation: number;
   status: VehicleStatus;
   /** Set only once a verified purchase receipt has been recorded. */
   purchaseReceiptRef?: string;
   purchaseConfirmedAt?: Date;
+  /** Set once a GPS tracker is fitted at possession (mock Initrack adapter). */
+  gpsImei?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export type VehicleFinanceType = 'IJARAH' | 'MURABAHA';
-
 export type VehicleStatus =
-  | 'SOURCING'
-  | 'RESERVED'
-  | 'PURCHASE_CONFIRMED'
-  | 'ALLOCATED'
-  | 'IN_SERVICE'
-  | 'REPOSSESSED';
+  'SOURCING' | 'RESERVED' | 'PURCHASE_CONFIRMED' | 'ALLOCATED' | 'IN_SERVICE' | 'REPOSSESSED';

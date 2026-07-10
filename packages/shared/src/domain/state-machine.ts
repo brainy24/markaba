@@ -13,6 +13,19 @@ export class NotImplementedError extends Error {
   }
 }
 
+/**
+ * Thrown when code attempts a binding credit decision (see
+ * `isBindingCreditDecision`) without a human-approval token — CLAUDE.md §2.3:
+ * "any function that would... issue a binding decision must require an explicit
+ * humanApproval token/parameter and log the accountable actor."
+ */
+export class MissingHumanApprovalError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'MissingHumanApprovalError';
+  }
+}
+
 /** The legal application-state transition table (states only — no side effects). */
 const TRANSITIONS: Readonly<Record<ApplicationState, readonly ApplicationState[]>> = {
   SUBMITTED: ['KYC_PENDING'],
@@ -46,6 +59,19 @@ export function legalNextStates(from: ApplicationState): readonly ApplicationSta
 }
 
 /**
+ * Is `from -> to` a binding credit decision (CLAUDE.md §2.3)? Only the
+ * accept/reject calls a human makes at underwriting — not the routine
+ * progression through KYC/consent, not the referral-loop's send-back-for-more-
+ * review leg (REFERRED -> UNDERWRITING), and not the SSB-gated contract step
+ * (that has its own, separate gate in `applyTransition`).
+ */
+export function isBindingCreditDecision(from: ApplicationState, to: ApplicationState): boolean {
+  return (
+    (to === 'APPROVED' || to === 'DECLINED') && (from === 'UNDERWRITING' || from === 'REFERRED')
+  );
+}
+
+/**
  * Pure state-transition function. Returns the next state, or throws.
  *
  * PURCHASE_CONFIRMED -> CONTRACT_SIGNED is legal in the table (it is the correct
@@ -55,10 +81,7 @@ export function legalNextStates(from: ApplicationState): readonly ApplicationSta
  *
  * TODO: requires SSB certification — do not implement the contract-generation body.
  */
-export function applyTransition(
-  from: ApplicationState,
-  to: ApplicationState,
-): ApplicationState {
+export function applyTransition(from: ApplicationState, to: ApplicationState): ApplicationState {
   if (!canTransition(from, to)) {
     throw new Error(`Illegal application state transition: ${from} -> ${to}`);
   }

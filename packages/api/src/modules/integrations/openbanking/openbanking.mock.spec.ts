@@ -16,7 +16,10 @@ describe('MockOpenBankingProvider', () => {
   });
 
   it('returns a fake, pending debit mandate', async () => {
-    const mandate = await provider.createDebitMandate({ customerId: 'cust-1', amountNaira: 50_000 });
+    const mandate = await provider.createDebitMandate({
+      customerId: 'cust-1',
+      amountNaira: 50_000,
+    });
     expect(mandate.status).toBe('PENDING');
     expect(mandate.mandateId).toMatch(/^mock-mandate-/);
   });

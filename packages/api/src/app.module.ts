@@ -9,6 +9,8 @@ import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { CreditModule } from './modules/credit/credit.module';
 import { ShariaModule } from './modules/sharia/sharia.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { ScqModule } from './modules/scq/scq.module';
+import { VehiclesModule } from './modules/vehicles/vehicles.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { AuditModule } from './modules/audit/audit.module';
     IntegrationsModule,
     CreditModule,
     ShariaModule,
+    ScqModule,
+    VehiclesModule,
   ],
   controllers: [HealthController],
 })

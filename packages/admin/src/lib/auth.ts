@@ -34,8 +34,14 @@ export function decodeSession(raw: string | undefined): Session | null {
   }
 }
 
-/** Roles allowed to view the audit/compliance section of the dashboard. */
+/** Roles allowed to view the audit trail. */
 export const COMPLIANCE_VIEW_ROLES: readonly Role[] = ['CEO', 'Compliance'];
+
+/** Roles allowed to view the Sharia Compliance Query register (PRD A.3). */
+export const SCQ_VIEW_ROLES: readonly Role[] = ['CEO', 'Compliance'];
+
+/** Roles allowed to view the vehicle sourcing / purchase workflow (PRD B.5). */
+export const OPERATIONS_VIEW_ROLES: readonly Role[] = ['CEO', 'Operations'];
 
 export function canAccess(role: Role, allowedRoles: readonly Role[]): boolean {
   return allowedRoles.includes(role);

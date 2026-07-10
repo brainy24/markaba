@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { COMPLIANCE_VIEW_ROLES, decodeSession, SESSION_COOKIE } from './lib/auth';
+import {
+  COMPLIANCE_VIEW_ROLES,
+  decodeSession,
+  OPERATIONS_VIEW_ROLES,
+  SCQ_VIEW_ROLES,
+  SESSION_COOKIE,
+} from './lib/auth';
 
 export function middleware(request: NextRequest) {
   const session = decodeSession(request.cookies.get(SESSION_COOKIE)?.value);
@@ -10,11 +16,17 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (
-    request.nextUrl.pathname.startsWith('/dashboard/audit') &&
-    !COMPLIANCE_VIEW_ROLES.includes(session.role)
-  ) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  const { pathname } = request.nextUrl;
+  const roleGates: Array<[string, readonly string[]]> = [
+    ['/dashboard/audit', COMPLIANCE_VIEW_ROLES],
+    ['/dashboard/compliance', SCQ_VIEW_ROLES],
+    ['/dashboard/operations', OPERATIONS_VIEW_ROLES],
+  ];
+
+  for (const [prefix, allowedRoles] of roleGates) {
+    if (pathname.startsWith(prefix) && !allowedRoles.includes(session.role)) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
   }
 
   return NextResponse.next();

@@ -12,8 +12,11 @@ export interface InboundWhatsAppMessage {
 const WHATSAPP_ACTOR = 'whatsapp-bot';
 
 /** Mock defaults — a real flow would collect these over the conversation. */
-const MOCK_DEFAULT_FINANCE_TYPE = 'IJARAH' as const;
-const MOCK_DEFAULT_REQUESTED_AMOUNT_NAIRA = 3_600_000;
+const MOCK_DEFAULT_PRODUCT = 'IJARAH' as const;
+const MOCK_DEFAULT_FINANCED_AMOUNT = 3_600_000;
+const MOCK_DEFAULT_DOWN_PAYMENT_PCT = 20;
+const MOCK_DEFAULT_TERM_MONTHS = 36;
+const MOCK_DEFAULT_DECLARED_VEHICLE_USE = 'personal_commute';
 
 @Injectable()
 export class WhatsAppService {
@@ -55,14 +58,17 @@ export class WhatsAppService {
   private async handleStartApplication(from: string): Promise<string> {
     let customer = await this.customers.findByPhoneNumber(from);
     if (!customer) {
-      customer = await this.customers.create({ fullName: 'Pending KYC', phoneNumber: from });
+      customer = await this.customers.create({ displayName: 'Pending KYC', phone: from });
     }
 
     const application = await this.applications.create(
       {
         customerId: customer.id,
-        financeType: MOCK_DEFAULT_FINANCE_TYPE,
-        requestedAmountNaira: MOCK_DEFAULT_REQUESTED_AMOUNT_NAIRA,
+        product: MOCK_DEFAULT_PRODUCT,
+        financedAmount: MOCK_DEFAULT_FINANCED_AMOUNT,
+        downPaymentPct: MOCK_DEFAULT_DOWN_PAYMENT_PCT,
+        termMonths: MOCK_DEFAULT_TERM_MONTHS,
+        declaredVehicleUse: MOCK_DEFAULT_DECLARED_VEHICLE_USE,
       },
       WHATSAPP_ACTOR,
     );
@@ -76,12 +82,12 @@ export class WhatsAppService {
   private async handleCheckStatus(from: string): Promise<string> {
     const customer = await this.customers.findByPhoneNumber(from);
     if (!customer) {
-      return "We don't have an application on file for this number yet. Reply \"apply\" to start one.";
+      return 'We don\'t have an application on file for this number yet. Reply "apply" to start one.';
     }
 
     const application = await this.applications.findLatestByCustomer(customer.id);
     if (!application) {
-      return "We don't have an application on file for this number yet. Reply \"apply\" to start one.";
+      return 'We don\'t have an application on file for this number yet. Reply "apply" to start one.';
     }
 
     return `Your latest application (${application.id}) is currently: ${application.state}.`;

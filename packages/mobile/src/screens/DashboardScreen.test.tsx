@@ -24,22 +24,18 @@ describe('DashboardScreen', () => {
     expect(await findByTestId('dashboard-empty')).toBeTruthy();
   });
 
-  it(
-    'renders each application returned by the API',
-    async () => {
-      mockFetchMyApplications.mockResolvedValueOnce([
-        {
-          id: 'app-1',
-          state: 'UNDERWRITING',
-          financeType: 'IJARAH',
-          requestedAmountNaira: 3_000_000,
-        },
-      ]);
-      const { findByTestId } = renderScreen();
-      expect(await findByTestId('application-row-app-1')).toBeTruthy();
-    },
-    15_000,
-  );
+  it('renders each application returned by the API', async () => {
+    mockFetchMyApplications.mockResolvedValueOnce([
+      {
+        id: 'app-1',
+        state: 'UNDERWRITING',
+        product: 'IJARAH',
+        financedAmount: 3_000_000,
+      },
+    ]);
+    const { findByTestId } = renderScreen();
+    expect(await findByTestId('application-row-app-1')).toBeTruthy();
+  }, 15_000);
 
   it('shows an error state when the API call fails', async () => {
     mockFetchMyApplications.mockRejectedValueOnce(new Error('network down'));

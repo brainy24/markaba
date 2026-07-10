@@ -8,9 +8,7 @@ describe('ShariaService', () => {
   const vehicle = { id: 'veh-1' } as Vehicle;
 
   it('throws NotImplementedError for every Sharia-critical method', () => {
-    expect(() => service.generateIjarahContract(application, vehicle)).toThrow(
-      NotImplementedError,
-    );
+    expect(() => service.generateIjarahContract(application, vehicle)).toThrow(NotImplementedError);
     expect(() => service.generateMurabahaContract(application, vehicle)).toThrow(
       NotImplementedError,
     );

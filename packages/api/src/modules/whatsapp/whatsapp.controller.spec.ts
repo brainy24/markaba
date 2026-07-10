@@ -44,9 +44,7 @@ describe('WhatsAppController', () => {
     const payload = {
       entry: [
         {
-          changes: [
-            { value: { messages: [{ from: '+2348000000001', text: { body: 'apply' } }] } },
-          ],
+          changes: [{ value: { messages: [{ from: '+2348000000001', text: { body: 'apply' } }] } }],
         },
       ],
     };

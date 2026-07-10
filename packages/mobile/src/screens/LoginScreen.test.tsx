@@ -13,22 +13,18 @@ function renderScreen() {
 }
 
 describe('LoginScreen', () => {
-  it(
-    'signs in and navigates to Dashboard for a valid phone number',
-    async () => {
-      const { getByTestId, navigation } = renderScreen();
+  it('signs in and navigates to Dashboard for a valid phone number', async () => {
+    const { getByTestId, navigation } = renderScreen();
 
-      fireEvent.changeText(getByTestId('phone-input'), '+2348000000001');
-      fireEvent.press(getByTestId('login-submit'));
+    fireEvent.changeText(getByTestId('phone-input'), '+2348000000001');
+    fireEvent.press(getByTestId('login-submit'));
 
-      await waitFor(() =>
-        expect(navigation.replace).toHaveBeenCalledWith('Dashboard', {
-          phoneNumber: '+2348000000001',
-        }),
-      );
-    },
-    15_000,
-  );
+    await waitFor(() =>
+      expect(navigation.replace).toHaveBeenCalledWith('Dashboard', {
+        phoneNumber: '+2348000000001',
+      }),
+    );
+  }, 15_000);
 
   it('shows an error and does not navigate for an invalid phone number', async () => {
     const { getByTestId, navigation, findByTestId } = renderScreen();

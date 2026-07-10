@@ -1,7 +1,13 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
-import { COMPLIANCE_VIEW_ROLES, decodeSession, SESSION_COOKIE } from '../../lib/auth';
+import {
+  COMPLIANCE_VIEW_ROLES,
+  decodeSession,
+  OPERATIONS_VIEW_ROLES,
+  SCQ_VIEW_ROLES,
+  SESSION_COOKIE,
+} from '../../lib/auth';
 import { mockSignOut } from './actions';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -22,9 +28,23 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       >
         <nav style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
           <strong>Markaba Admin</strong>
-          <Link href="/dashboard">Applications</Link>
+          <Link href="/dashboard" className="nav-link">
+            Applications
+          </Link>
+          {OPERATIONS_VIEW_ROLES.includes(session.role) && (
+            <Link href="/dashboard/operations" className="nav-link">
+              Operations
+            </Link>
+          )}
+          {SCQ_VIEW_ROLES.includes(session.role) && (
+            <Link href="/dashboard/compliance" className="nav-link">
+              Compliance
+            </Link>
+          )}
           {COMPLIANCE_VIEW_ROLES.includes(session.role) && (
-            <Link href="/dashboard/audit">Audit</Link>
+            <Link href="/dashboard/audit" className="nav-link">
+              Audit
+            </Link>
           )}
         </nav>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', fontSize: '0.85rem' }}>

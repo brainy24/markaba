@@ -1,8 +1,8 @@
 export type KycVerificationStatus = 'VERIFIED' | 'FAILED' | 'PENDING';
 
 export interface KycVerificationInput {
-  fullName: string;
-  phoneNumber: string;
+  displayName: string;
+  phone: string;
   /** Sandbox-only. Never a real BVN in this phase (CLAUDE.md §2.2). */
   bvn?: string;
 }

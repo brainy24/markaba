@@ -1,7 +1,12 @@
 // STUB — Phase 1 rule-based placeholder. Real model = Phase 2, see PRD §7.7. Never
 // issues a binding decision.
 import { Injectable } from '@nestjs/common';
-import type { CreditRecommendation, CreditScoreResult, CreditScoringInput, ScoreFactor } from './credit.types';
+import type {
+  CreditRecommendation,
+  CreditScoreResult,
+  CreditScoringInput,
+  ScoreFactor,
+} from './credit.types';
 
 const BASE_SCORE = 500;
 
@@ -40,16 +45,10 @@ export class CreditService {
     const kycContribution = KYC_CONTRIBUTION[input.kycStatus];
     explanation.push({ factor: `kycStatus:${input.kycStatus}`, contribution: kycContribution });
 
-    const estimatedMonthlyInstallment = input.requestedAmountNaira / ASSUMED_TERM_MONTHS;
+    const estimatedMonthlyInstallment = input.financedAmount / ASSUMED_TERM_MONTHS;
     const affordabilityRatio =
-      estimatedMonthlyInstallment > 0
-        ? input.monthlyIncomeNaira / estimatedMonthlyInstallment
-        : 0;
-    const affordabilityContribution = clamp(
-      Math.round((affordabilityRatio - 1) * 200),
-      -300,
-      300,
-    );
+      estimatedMonthlyInstallment > 0 ? input.monthlyIncomeNaira / estimatedMonthlyInstallment : 0;
+    const affordabilityContribution = clamp(Math.round((affordabilityRatio - 1) * 200), -300, 300);
     explanation.push({ factor: 'affordabilityRatio', contribution: affordabilityContribution });
 
     const debtToIncome =

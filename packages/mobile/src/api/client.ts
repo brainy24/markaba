@@ -8,8 +8,8 @@ const API_BASE_URL = 'http://localhost:3000';
 export interface ApplicationSummary {
   id: string;
   state: string;
-  financeType: string;
-  requestedAmountNaira: number;
+  product: string;
+  financedAmount: number;
 }
 
 export async function fetchMyApplications(phoneNumber: string): Promise<ApplicationSummary[]> {

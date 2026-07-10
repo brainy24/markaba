@@ -14,7 +14,7 @@ describe('WhatsAppService', () => {
   beforeEach(async () => {
     customers = {
       findByPhoneNumber: jest.fn(() => Promise.resolve(null)),
-      create: jest.fn(() => Promise.resolve({ id: 'cust-1', phoneNumber: '+2348000000001' })),
+      create: jest.fn(() => Promise.resolve({ id: 'cust-1', phone: '+2348000000001' })),
     };
     applications = {
       create: jest.fn(() => Promise.resolve({ id: 'app-1', state: 'SUBMITTED' })),
@@ -42,8 +42,8 @@ describe('WhatsAppService', () => {
     const reply = await service.handleMessage({ from: '+2348000000001', text: 'apply' });
 
     expect(customers.create).toHaveBeenCalledWith({
-      fullName: 'Pending KYC',
-      phoneNumber: '+2348000000001',
+      displayName: 'Pending KYC',
+      phone: '+2348000000001',
     });
     expect(applications.create).toHaveBeenCalledWith(
       expect.objectContaining({ customerId: 'cust-1' }),
@@ -56,7 +56,7 @@ describe('WhatsAppService', () => {
   it('reuses an existing customer record instead of creating a duplicate', async () => {
     customers.findByPhoneNumber.mockResolvedValueOnce({
       id: 'cust-existing',
-      phoneNumber: '+2348000000001',
+      phone: '+2348000000001',
     });
 
     await service.handleMessage({ from: '+2348000000001', text: 'apply' });

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { APPLICATION_STATES, type ApplicationState } from './application';
-import { applyTransition, canTransition, legalNextStates, NotImplementedError } from './state-machine';
+import {
+  applyTransition,
+  canTransition,
+  isBindingCreditDecision,
+  legalNextStates,
+  NotImplementedError,
+} from './state-machine';
 
 describe('canTransition', () => {
   it('allows the documented happy-path sequence', () => {
@@ -81,5 +87,24 @@ describe('applyTransition', () => {
     for (const [from, to] of nonGated) {
       expect(() => applyTransition(from, to)).not.toThrow();
     }
+  });
+});
+
+describe('isBindingCreditDecision', () => {
+  it('flags approve/decline out of UNDERWRITING and REFERRED', () => {
+    expect(isBindingCreditDecision('UNDERWRITING', 'APPROVED')).toBe(true);
+    expect(isBindingCreditDecision('UNDERWRITING', 'DECLINED')).toBe(true);
+    expect(isBindingCreditDecision('REFERRED', 'DECLINED')).toBe(true);
+  });
+
+  it('does not flag the referral loop or routine progression', () => {
+    expect(isBindingCreditDecision('UNDERWRITING', 'REFERRED')).toBe(false);
+    expect(isBindingCreditDecision('REFERRED', 'UNDERWRITING')).toBe(false);
+    expect(isBindingCreditDecision('SUBMITTED', 'KYC_PENDING')).toBe(false);
+    expect(isBindingCreditDecision('KYC_PENDING', 'DECLINED')).toBe(false);
+  });
+
+  it('does not flag the SSB-gated contract transition', () => {
+    expect(isBindingCreditDecision('PURCHASE_CONFIRMED', 'CONTRACT_SIGNED')).toBe(false);
   });
 });

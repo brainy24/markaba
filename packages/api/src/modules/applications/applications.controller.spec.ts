@@ -45,4 +45,29 @@ describe('ApplicationsController', () => {
     const result = await controller.findMine('+2348000000001');
     expect(result).toEqual([]);
   });
+
+  it('delegates a transition request to the service, including the human-approval token', async () => {
+    const customers = { findByPhoneNumber: jest.fn() };
+    const applications = {
+      transition: jest.fn(() => Promise.resolve({ id: 'app-1', state: 'APPROVED' })),
+    };
+    const controller = new ApplicationsController(
+      customers as unknown as CustomersService,
+      applications as unknown as ApplicationsService,
+    );
+
+    const result = await controller.transition('app-1', {
+      to: 'APPROVED',
+      actor: 'credit-analyst-1',
+      humanApprovalToken: 'mock-approval:CreditAnalyst:credit-analyst-1',
+    });
+
+    expect(applications.transition).toHaveBeenCalledWith({
+      applicationId: 'app-1',
+      to: 'APPROVED',
+      actor: 'credit-analyst-1',
+      humanApprovalToken: 'mock-approval:CreditAnalyst:credit-analyst-1',
+    });
+    expect(result).toEqual({ id: 'app-1', state: 'APPROVED' });
+  });
 });
