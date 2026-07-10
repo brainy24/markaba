@@ -39,3 +39,4 @@ packages/mobile/ios/build/
 
 # Prisma
 packages/api/prisma/*.db
+packages/admin/src/generated/

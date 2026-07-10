@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
-import { decodeSession, SESSION_COOKIE } from '../lib/auth';
+import { auth } from '../auth';
 
-export default function RootPage() {
-  const session = decodeSession(cookies().get(SESSION_COOKIE)?.value);
+export default async function RootPage() {
+  const session = await auth();
   redirect(session ? '/dashboard' : '/login');
 }

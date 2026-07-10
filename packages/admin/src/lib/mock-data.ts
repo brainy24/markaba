@@ -4,7 +4,6 @@ import {
   isBindingCreditDecision,
   MissingHumanApprovalError,
 } from '@markaba/shared';
-import type { Role } from './auth';
 
 /**
  * Self-contained, in-memory mock store (CLAUDE.md §3 — "read-only mock data").
@@ -401,70 +400,3 @@ export const MOCK_SCQS: ShariaComplianceQuery[] = [
       'Rebate must remain discretionary, non-contractual — approved with that wording.',
   },
 ];
-
-/**
- * Admin portal user directory. Mock/in-memory like everything else in this
- * file — Phase 1 auth has no real identity provider (CLAUDE.md §3), so this is
- * a record-keeping directory a SuperAdmin manages, not an access-control list:
- * the login screen still lets anyone pick any role from the dropdown, same as
- * before this feature existed. See lib/auth.ts USER_MANAGEMENT_ROLES.
- */
-export interface MockAdminProfile {
-  id: string;
-  name: string;
-  role: Role;
-  createdAt: string;
-  createdBy: string;
-}
-
-export const MOCK_ADMIN_PROFILES: MockAdminProfile[] = [
-  {
-    id: 'ADMIN-1',
-    name: 'Founding Admin',
-    role: 'SuperAdmin',
-    createdAt: '2026-06-01',
-    createdBy: 'system',
-  },
-  {
-    id: 'ADMIN-2',
-    name: 'Fatima Abdullahi',
-    role: 'CreditAnalyst',
-    createdAt: '2026-06-02',
-    createdBy: 'Founding Admin',
-  },
-  {
-    id: 'ADMIN-3',
-    name: 'Yusuf Garba',
-    role: 'Operations',
-    createdAt: '2026-06-02',
-    createdBy: 'Founding Admin',
-  },
-];
-
-/**
- * Creates a new admin profile and audit-logs it. Only callable after the
- * caller has verified the acting session is SuperAdmin — see
- * dashboard/users/actions.ts, which is the sole caller.
- */
-export function createAdminProfile(name: string, role: Role, createdBy: string): MockAdminProfile {
-  const profile: MockAdminProfile = {
-    id: `ADMIN-${MOCK_ADMIN_PROFILES.length + 1}`,
-    name,
-    role,
-    createdAt: new Date().toISOString().slice(0, 10),
-    createdBy,
-  };
-  MOCK_ADMIN_PROFILES.push(profile);
-
-  MOCK_AUDIT_LOG.unshift({
-    id: `${profile.id}-created`,
-    actor: createdBy,
-    action: 'ADMIN_PROFILE_CREATED',
-    entityType: 'AdminProfile',
-    entityId: profile.id,
-    detail: `Created ${profile.name} as ${profile.role}`,
-    at: profile.createdAt,
-  });
-
-  return profile;
-}

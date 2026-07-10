@@ -7,6 +7,12 @@
     "moduleResolution": "bundler",
     "jsx": "preserve",
     "noEmit": true,
+    // Overrides tsconfig.base.json's declaration:true — this is an app, not
+    // a library, and Auth.js v5's complex inferred export types (auth.ts's
+    // `auth`, middleware.ts's default export) trip TS2742 ("inferred type
+    // cannot be named") when declaration emission is considered, even with
+    // noEmit set.
+    "declaration": false,
     "incremental": true,
     "isolatedModules": true,
     "allowJs": true,

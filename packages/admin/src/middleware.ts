@@ -1,24 +1,28 @@
+import NextAuth from 'next-auth';
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import authConfig from './auth.config';
 import {
   COMPLIANCE_VIEW_ROLES,
-  decodeSession,
   OPERATIONS_VIEW_ROLES,
   SCQ_VIEW_ROLES,
-  SESSION_COOKIE,
   USER_MANAGEMENT_ROLES,
+  type Role,
 } from './lib/auth';
 
-export function middleware(request: NextRequest) {
-  const session = decodeSession(request.cookies.get(SESSION_COOKIE)?.value);
+// Uses the Edge-safe auth.config.ts directly, not the full auth.ts (which
+// imports the Prisma adapter) — see docs/decisions/0002-admin-oauth-jwt-sessions.md.
+const { auth } = NextAuth(authConfig);
 
-  if (!session) {
-    const loginUrl = new URL('/login', request.url);
+export default auth((req) => {
+  const role = req.auth?.user.role;
+
+  if (!role) {
+    const loginUrl = new URL('/login', req.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  const { pathname } = request.nextUrl;
-  const roleGates: Array<[string, readonly string[]]> = [
+  const { pathname } = req.nextUrl;
+  const roleGates: Array<[string, readonly Role[]]> = [
     ['/dashboard/audit', COMPLIANCE_VIEW_ROLES],
     ['/dashboard/compliance', SCQ_VIEW_ROLES],
     ['/dashboard/operations', OPERATIONS_VIEW_ROLES],
@@ -26,13 +30,13 @@ export function middleware(request: NextRequest) {
   ];
 
   for (const [prefix, allowedRoles] of roleGates) {
-    if (pathname.startsWith(prefix) && !allowedRoles.includes(session.role)) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+    if (pathname.startsWith(prefix) && !allowedRoles.includes(role)) {
+      return NextResponse.redirect(new URL('/dashboard', req.url));
     }
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: ['/dashboard/:path*'],

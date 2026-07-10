@@ -1,22 +1,23 @@
 'use server';
 
-import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
-import { decodeSession, OPERATIONS_VIEW_ROLES, SESSION_COOKIE } from '../../../lib/auth';
+import { auth } from '../../../auth';
+import { OPERATIONS_VIEW_ROLES } from '../../../lib/auth';
 import { applyMockTransition, recordVehiclePurchase } from '../../../lib/mock-data';
 
-function requireOperationsSession() {
-  const session = decodeSession(cookies().get(SESSION_COOKIE)?.value);
-  if (!session || !OPERATIONS_VIEW_ROLES.includes(session.role)) {
+async function requireOperationsActor(): Promise<string> {
+  const session = await auth();
+  const role = session?.user.role;
+  if (!role || !OPERATIONS_VIEW_ROLES.includes(role)) {
     throw new Error('Only an Operations or CEO session may act on vehicle sourcing.');
   }
-  return session;
+  return session!.user.name ?? session!.user.email ?? 'unknown';
 }
 
 /** APPROVED -> VEHICLE_SOURCING. Not a credit decision — no approval token needed. */
 export async function startSourcing(applicationId: string): Promise<void> {
-  const session = requireOperationsSession();
-  applyMockTransition(applicationId, 'VEHICLE_SOURCING', session.name);
+  const actor = await requireOperationsActor();
+  applyMockTransition(applicationId, 'VEHICLE_SOURCING', actor);
   revalidatePath('/dashboard/operations');
 }
 
@@ -27,11 +28,11 @@ export async function startSourcing(applicationId: string): Promise<void> {
  * the SSB gate is the separate PURCHASE_CONFIRMED -> CONTRACT_SIGNED step.
  */
 export async function confirmPurchase(applicationId: string, formData: FormData): Promise<void> {
-  const session = requireOperationsSession();
+  const actor = await requireOperationsActor();
   const purchaseReceiptRef = String(formData.get('purchaseReceiptRef') ?? '').trim();
   if (!purchaseReceiptRef) {
     throw new Error('A purchase receipt reference is required to confirm a purchase.');
   }
-  recordVehiclePurchase(applicationId, purchaseReceiptRef, session.name);
+  recordVehiclePurchase(applicationId, purchaseReceiptRef, actor);
   revalidatePath('/dashboard/operations');
 }

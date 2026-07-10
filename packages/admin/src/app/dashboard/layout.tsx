@@ -1,19 +1,19 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { cookies } from 'next/headers';
+import { auth } from '../../auth';
 import {
   COMPLIANCE_VIEW_ROLES,
-  decodeSession,
   OPERATIONS_VIEW_ROLES,
   SCQ_VIEW_ROLES,
-  SESSION_COOKIE,
   USER_MANAGEMENT_ROLES,
 } from '../../lib/auth';
-import { mockSignOut } from './actions';
+import { adminSignOut } from './actions';
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
-  // Middleware already guarantees a session exists for every /dashboard/* route.
-  const session = decodeSession(cookies().get(SESSION_COOKIE)?.value)!;
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
+  // Middleware already guarantees a session with a role exists for every
+  // /dashboard/* route — see middleware.ts.
+  const session = await auth();
+  const role = session!.user.role!;
 
   return (
     <div>
@@ -32,22 +32,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <Link href="/dashboard" className="nav-link">
             Applications
           </Link>
-          {OPERATIONS_VIEW_ROLES.includes(session.role) && (
+          {OPERATIONS_VIEW_ROLES.includes(role) && (
             <Link href="/dashboard/operations" className="nav-link">
               Operations
             </Link>
           )}
-          {SCQ_VIEW_ROLES.includes(session.role) && (
+          {SCQ_VIEW_ROLES.includes(role) && (
             <Link href="/dashboard/compliance" className="nav-link">
               Compliance
             </Link>
           )}
-          {COMPLIANCE_VIEW_ROLES.includes(session.role) && (
+          {COMPLIANCE_VIEW_ROLES.includes(role) && (
             <Link href="/dashboard/audit" className="nav-link">
               Audit
             </Link>
           )}
-          {USER_MANAGEMENT_ROLES.includes(session.role) && (
+          {USER_MANAGEMENT_ROLES.includes(role) && (
             <Link href="/dashboard/users" className="nav-link">
               Users
             </Link>
@@ -55,9 +55,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </nav>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', fontSize: '0.85rem' }}>
           <span>
-            {session.name} · <span className="badge">{session.role}</span>
+            {session!.user.name ?? session!.user.email} · <span className="badge">{role}</span>
           </span>
-          <form action={mockSignOut}>
+          <form action={adminSignOut}>
             <button type="submit" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
               Sign out
             </button>

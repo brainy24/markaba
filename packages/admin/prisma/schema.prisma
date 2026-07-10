@@ -1,0 +1,100 @@
+// Markaba admin portal — staff auth schema.
+// Deliberately separate from packages/api/prisma/schema.prisma: admin staff
+// accounts are a different bounded context from the lending domain data
+// (different lifecycle, different access pattern). Can live in the same
+// Postgres instance as separate tables, or a fully separate database — either
+// way this schema/connection is independent of the API's.
+//
+// GOLDEN RULE (CLAUDE.md §2.2): no real credentials in code — ADMIN_DATABASE_URL
+// and OAuth client secrets are env-only, placeholders in .env.example.
+
+// Custom output path: packages/api also has its own @prisma/client
+// dependency, and npm workspace hoisting would otherwise make both packages'
+// `prisma generate` overwrite the same shared node_modules/@prisma/client —
+// generating straight into a source-adjacent folder avoids that collision
+// entirely (Prisma's documented pattern for multiple schemas in one repo).
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Named distinctly from packages/api's DATABASE_URL — different app,
+  // different database, and this avoids ambiguity in the shared root
+  // .env.example even though each Next.js/Nest app only loads its own
+  // package-local env file at runtime.
+  url      = env("ADMIN_DATABASE_URL")
+}
+
+/// Mirrors packages/admin/src/lib/auth.ts's ROLES exactly.
+enum Role {
+  CEO
+  CreditAnalyst
+  Operations
+  Compliance
+  SuperAdmin
+}
+
+/// Standard Auth.js (next-auth v5) Prisma-adapter shape, extended with `role`.
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  /// Set from a matching AdminInvite on first sign-in. Null means "signed in
+  /// with a valid Google/Microsoft account but never invited" — signIn()
+  /// rejects that case before a session is ever issued, so this should only
+  /// be transiently null mid-provisioning.
+  role          Role?
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+/// SuperAdmin adds one of these BEFORE the person ever signs in — this is
+/// what makes sign-in real access control rather than "any Google account
+/// gets in." Consumed (role copied onto User, consumedAt set) on first
+/// successful sign-in for a matching email — see src/auth.ts's jwt callback.
+model AdminInvite {
+  id         String    @id @default(cuid())
+  email      String    @unique
+  role       Role
+  invitedBy  String
+  createdAt  DateTime  @default(now())
+  consumedAt DateTime?
+}

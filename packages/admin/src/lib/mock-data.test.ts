@@ -2,11 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { MissingHumanApprovalError, NotImplementedError } from '@markaba/shared';
 import {
   applyMockTransition,
-  createAdminProfile,
   filterApplications,
   filterAuditLog,
   findApplicationById,
-  MOCK_ADMIN_PROFILES,
   MOCK_APPLICATIONS,
   MOCK_AUDIT_LOG,
   MOCK_SCQS,
@@ -182,28 +180,5 @@ describe('recordVehiclePurchase', () => {
     expect(() => recordVehiclePurchase('APP-1003', 'receipt-ref-003', 'operations-1')).toThrow(
       /Illegal application state transition/,
     );
-  });
-});
-
-describe('createAdminProfile', () => {
-  it('appends a new profile to the directory', () => {
-    const before = MOCK_ADMIN_PROFILES.length;
-    const profile = createAdminProfile('New Analyst', 'CreditAnalyst', 'Founding Admin');
-
-    expect(MOCK_ADMIN_PROFILES).toHaveLength(before + 1);
-    expect(profile.name).toBe('New Analyst');
-    expect(profile.role).toBe('CreditAnalyst');
-    expect(profile.createdBy).toBe('Founding Admin');
-  });
-
-  it('audit-logs the creation as an AdminProfile entity, not an Application', () => {
-    const profile = createAdminProfile('Another User', 'Operations', 'Founding Admin');
-
-    expect(MOCK_AUDIT_LOG[0]).toMatchObject({
-      action: 'ADMIN_PROFILE_CREATED',
-      entityType: 'AdminProfile',
-      entityId: profile.id,
-      actor: 'Founding Admin',
-    });
   });
 });

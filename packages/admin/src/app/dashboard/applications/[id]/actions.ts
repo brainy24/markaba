@@ -1,9 +1,9 @@
 'use server';
 
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { ApplicationState } from '@markaba/shared';
-import { decodeSession, SESSION_COOKIE, type Role } from '../../../../lib/auth';
+import { auth } from '../../../../auth';
+import type { Role } from '../../../../lib/auth';
 import { applyMockTransition } from '../../../../lib/mock-data';
 
 /**
@@ -13,25 +13,28 @@ import { applyMockTransition } from '../../../../lib/mock-data';
 const CREDIT_DECISION_ROLES: readonly Role[] = ['CreditAnalyst', 'CEO'];
 
 /**
- * Phase 1 human-approval token (CLAUDE.md §2.3): the admin session is the human
- * checkpoint. `decodeSession` reads a server-verified, httpOnly cookie the
+ * Human-approval token (CLAUDE.md §2.3): the authenticated Auth.js session is
+ * the human checkpoint — `auth()` reads a signed, server-verified JWT the
  * client cannot forge, so its mere existence — checked below before this is
- * ever called — is what makes this a real human action, not an autonomous one.
- * This string itself is a mock marker, not a cryptographic signature; a
- * production version needs a real signed-action token.
+ * ever called — is what makes this a real human action, not an autonomous
+ * one. This string itself is a marker for the audit trail, not a
+ * cryptographic signature of the decision; the session token is what's
+ * actually cryptographically verified.
  */
-function buildHumanApprovalToken(role: Role, name: string): string {
-  return `mock-approval:${role}:${name}:${Date.now()}`;
+function buildHumanApprovalToken(role: Role, actor: string): string {
+  return `oauth-approval:${role}:${actor}:${Date.now()}`;
 }
 
 async function decide(applicationId: string, to: ApplicationState): Promise<void> {
-  const session = decodeSession(cookies().get(SESSION_COOKIE)?.value);
-  if (!session || !CREDIT_DECISION_ROLES.includes(session.role)) {
+  const session = await auth();
+  const role = session?.user.role;
+  if (!role || !CREDIT_DECISION_ROLES.includes(role)) {
     throw new Error('Only a CreditAnalyst or CEO session may make a credit decision.');
   }
 
-  const humanApprovalToken = buildHumanApprovalToken(session.role, session.name);
-  applyMockTransition(applicationId, to, session.name, humanApprovalToken);
+  const actor = session!.user.name ?? session!.user.email ?? 'unknown';
+  const humanApprovalToken = buildHumanApprovalToken(role, actor);
+  applyMockTransition(applicationId, to, actor, humanApprovalToken);
   redirect(`/dashboard/applications/${applicationId}`);
 }
 

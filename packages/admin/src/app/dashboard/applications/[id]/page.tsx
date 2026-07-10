@@ -1,8 +1,7 @@
 import Link from 'next/link';
-import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { canTransition } from '@markaba/shared';
-import { decodeSession, SESSION_COOKIE } from '../../../../lib/auth';
+import { auth } from '../../../../auth';
 import { findApplicationById, MOCK_SCQS } from '../../../../lib/mock-data';
 import { StatusBadge } from '../../../../components/StatusBadge';
 import { approveApplication, declineApplication, referApplication } from './actions';
@@ -13,14 +12,16 @@ function factorClass(contribution: number): string {
   return contribution >= 0 ? 'factor-contribution--positive' : 'factor-contribution--negative';
 }
 
-export default function ApplicationDetailPage({ params }: { params: { id: string } }) {
+export default async function ApplicationDetailPage({ params }: { params: { id: string } }) {
   const application = findApplicationById(params.id);
   if (!application) {
     notFound();
   }
 
-  const session = decodeSession(cookies().get(SESSION_COOKIE)?.value);
-  const canDecide = !!session && CREDIT_DECISION_ROLES.has(session.role);
+  const session = await auth();
+  const role = session?.user.role;
+  const displayName = session?.user.name ?? session?.user.email ?? 'Unknown';
+  const canDecide = !!role && CREDIT_DECISION_ROLES.has(role);
   const canApprove = canTransition(application.state, 'APPROVED');
   const canDecline = canTransition(application.state, 'DECLINED');
   const canRefer = canTransition(application.state, 'REFERRED');
@@ -77,8 +78,8 @@ export default function ApplicationDetailPage({ params }: { params: { id: string
             )}
           </div>
           <p className="action-note">
-            Signed in as {session!.name} ({session!.role}). This action is logged as the
-            human-approval evidence for this decision (CLAUDE.md §2.3).
+            Signed in as {displayName} ({role}). This action is logged as the human-approval
+            evidence for this decision (CLAUDE.md §2.3).
           </p>
         </div>
       )}
