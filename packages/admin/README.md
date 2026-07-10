@@ -12,12 +12,23 @@ actually get in (see `src/lib/invites.ts`). Before any of that works, someone
 has to provision the following. None of this can be done on your behalf — it
 involves creating third-party accounts and a database.
 
-1. **Provision a Postgres database** for this app specifically (separate
-   from `packages/api`'s database — see the ADR for why). Easiest path:
-   Netlify's Neon extension (Site settings → Extensions → Neon), which
-   auto-sets the connection env var on the site; or create a free project
-   directly at [neon.tech](https://neon.tech). Either way you get a
-   connection string → `ADMIN_DATABASE_URL`.
+1. **Provision Netlify Database** for this app specifically (separate from
+   `packages/api`'s database — see the ADR for why). Netlify's old
+   standalone Neon extension is superseded by this — it's now a native
+   Netlify feature (still Neon-powered underneath), on credit-based plans,
+   storage no longer free as of July 2026.
+   - From the repo root: `netlify database init` (interactive; installs
+     `@netlify/database` if not already present — it's already a dependency
+     here) — or via the Netlify dashboard's Database page.
+   - This app uses Prisma directly against the resulting connection string,
+     not Netlify's own Drizzle/SQL migration tooling — it's a plain Postgres
+     connection underneath, so `prisma migrate`/`prisma generate` work
+     against it exactly like any other Postgres database.
+   - Production: once deployed, Netlify auto-injects `NETLIFY_DB_URL` — no
+     manual step needed there.
+   - Local dev: `netlify database connect --json` prints the connection
+     details; take the `connection_string` field → `NETLIFY_DB_URL` in
+     `packages/admin/.env.local`.
 
 2. **Google OAuth app**: [Google Cloud Console](https://console.cloud.google.com/)
    → APIs & Services → OAuth consent screen (internal or external, your

@@ -5,7 +5,7 @@
 // Postgres instance as separate tables, or a fully separate database — either
 // way this schema/connection is independent of the API's.
 //
-// GOLDEN RULE (CLAUDE.md §2.2): no real credentials in code — ADMIN_DATABASE_URL
+// GOLDEN RULE (CLAUDE.md §2.2): no real credentials in code — NETLIFY_DB_URL
 // and OAuth client secrets are env-only, placeholders in .env.example.
 
 // Custom output path: packages/api also has its own @prisma/client
@@ -20,11 +20,14 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // Named distinctly from packages/api's DATABASE_URL — different app,
-  // different database, and this avoids ambiguity in the shared root
-  // .env.example even though each Next.js/Nest app only loads its own
-  // package-local env file at runtime.
-  url      = env("ADMIN_DATABASE_URL")
+  // NETLIFY_DB_URL is Netlify Database's own env var name (auto-injected in
+  // production once @netlify/database is installed and deployed — see
+  // package.json). We use Prisma directly against it rather than Netlify's
+  // own Drizzle/SQL migration tooling; it's a plain Postgres connection
+  // string underneath, so Prisma's migrate/generate work against it exactly
+  // like any other Postgres database. Locally, set this in .env.local to
+  // whatever `netlify database connect --json` returns.
+  url      = env("NETLIFY_DB_URL")
 }
 
 /// Mirrors packages/admin/src/lib/auth.ts's ROLES exactly.
