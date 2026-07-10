@@ -6,6 +6,7 @@ import {
   OPERATIONS_VIEW_ROLES,
   SCQ_VIEW_ROLES,
   SESSION_COOKIE,
+  USER_MANAGEMENT_ROLES,
 } from './lib/auth';
 
 export function middleware(request: NextRequest) {
@@ -21,6 +22,7 @@ export function middleware(request: NextRequest) {
     ['/dashboard/audit', COMPLIANCE_VIEW_ROLES],
     ['/dashboard/compliance', SCQ_VIEW_ROLES],
     ['/dashboard/operations', OPERATIONS_VIEW_ROLES],
+    ['/dashboard/users', USER_MANAGEMENT_ROLES],
   ];
 
   for (const [prefix, allowedRoles] of roleGates) {

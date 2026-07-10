@@ -3,7 +3,7 @@
  * real password, no real identity provider, and no real session store here.
  * Do not wire this to a production identity system without a redesign.
  */
-export const ROLES = ['CEO', 'CreditAnalyst', 'Operations', 'Compliance'] as const;
+export const ROLES = ['CEO', 'CreditAnalyst', 'Operations', 'Compliance', 'SuperAdmin'] as const;
 export type Role = (typeof ROLES)[number];
 
 export interface Session {
@@ -35,13 +35,21 @@ export function decodeSession(raw: string | undefined): Session | null {
 }
 
 /** Roles allowed to view the audit trail. */
-export const COMPLIANCE_VIEW_ROLES: readonly Role[] = ['CEO', 'Compliance'];
+export const COMPLIANCE_VIEW_ROLES: readonly Role[] = ['CEO', 'Compliance', 'SuperAdmin'];
 
 /** Roles allowed to view the Sharia Compliance Query register (PRD A.3). */
-export const SCQ_VIEW_ROLES: readonly Role[] = ['CEO', 'Compliance'];
+export const SCQ_VIEW_ROLES: readonly Role[] = ['CEO', 'Compliance', 'SuperAdmin'];
 
 /** Roles allowed to view the vehicle sourcing / purchase workflow (PRD B.5). */
-export const OPERATIONS_VIEW_ROLES: readonly Role[] = ['CEO', 'Operations'];
+export const OPERATIONS_VIEW_ROLES: readonly Role[] = ['CEO', 'Operations', 'SuperAdmin'];
+
+/**
+ * Roles allowed to manage the admin user directory (create profiles for other
+ * admin portal users). Deliberately its own role rather than folded into CEO —
+ * CEO keeps its existing business-facing permissions; user management is a
+ * distinct, narrower administrative capability.
+ */
+export const USER_MANAGEMENT_ROLES: readonly Role[] = ['SuperAdmin'];
 
 export function canAccess(role: Role, allowedRoles: readonly Role[]): boolean {
   return allowedRoles.includes(role);

@@ -7,6 +7,7 @@ import {
   OPERATIONS_VIEW_ROLES,
   SCQ_VIEW_ROLES,
   SESSION_COOKIE,
+  USER_MANAGEMENT_ROLES,
 } from '../../lib/auth';
 import { mockSignOut } from './actions';
 
@@ -44,6 +45,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           {COMPLIANCE_VIEW_ROLES.includes(session.role) && (
             <Link href="/dashboard/audit" className="nav-link">
               Audit
+            </Link>
+          )}
+          {USER_MANAGEMENT_ROLES.includes(session.role) && (
+            <Link href="/dashboard/users" className="nav-link">
+              Users
             </Link>
           )}
         </nav>

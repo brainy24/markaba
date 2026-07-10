@@ -61,9 +61,13 @@ export default function AuditPage({ searchParams }: { searchParams: AuditSearchP
                   <span className="badge">{entry.action}</span>
                 </td>
                 <td>
-                  <Link href={`/dashboard/applications/${entry.entityId}`} className="row-link">
-                    {entry.entityId}
-                  </Link>
+                  {entry.entityType === 'Application' ? (
+                    <Link href={`/dashboard/applications/${entry.entityId}`} className="row-link">
+                      {entry.entityId}
+                    </Link>
+                  ) : (
+                    entry.entityId
+                  )}
                 </td>
                 <td>{entry.detail}</td>
               </tr>

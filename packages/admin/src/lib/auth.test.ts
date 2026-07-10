@@ -8,6 +8,7 @@ import {
   OPERATIONS_VIEW_ROLES,
   ROLES,
   SCQ_VIEW_ROLES,
+  USER_MANAGEMENT_ROLES,
 } from './auth';
 
 describe('isRole', () => {
@@ -18,7 +19,7 @@ describe('isRole', () => {
   });
 
   it('rejects an unknown role', () => {
-    expect(isRole('SuperAdmin')).toBe(false);
+    expect(isRole('NotARole')).toBe(false);
   });
 });
 
@@ -37,7 +38,7 @@ describe('encodeSession / decodeSession', () => {
   });
 
   it('returns null for a well-formed cookie with an invalid role', () => {
-    expect(decodeSession(JSON.stringify({ name: 'X', role: 'SuperAdmin' }))).toBeNull();
+    expect(decodeSession(JSON.stringify({ name: 'X', role: 'NotARole' }))).toBeNull();
   });
 });
 
@@ -62,5 +63,17 @@ describe('canAccess', () => {
     expect(canAccess('CEO', OPERATIONS_VIEW_ROLES)).toBe(true);
     expect(canAccess('Operations', OPERATIONS_VIEW_ROLES)).toBe(true);
     expect(canAccess('Compliance', OPERATIONS_VIEW_ROLES)).toBe(false);
+  });
+
+  it('allows SuperAdmin to view every cross-cutting section', () => {
+    expect(canAccess('SuperAdmin', COMPLIANCE_VIEW_ROLES)).toBe(true);
+    expect(canAccess('SuperAdmin', SCQ_VIEW_ROLES)).toBe(true);
+    expect(canAccess('SuperAdmin', OPERATIONS_VIEW_ROLES)).toBe(true);
+  });
+
+  it('restricts user management to SuperAdmin only', () => {
+    expect(canAccess('SuperAdmin', USER_MANAGEMENT_ROLES)).toBe(true);
+    expect(canAccess('CEO', USER_MANAGEMENT_ROLES)).toBe(false);
+    expect(canAccess('Compliance', USER_MANAGEMENT_ROLES)).toBe(false);
   });
 });
