@@ -1,0 +1,15 @@
+# Deploys packages/admin (the Next.js admin dashboard) — the only Netlify-appropriate
+# app in this npm-workspaces monorepo. packages/api is a NestJS server and
+# packages/mobile is React Native; neither is a Netlify static/SSR target.
+#
+# Install runs at the repo root (not `base`) so npm workspace linking resolves
+# @markaba/shared correctly — see README for the local equivalent.
+[build]
+  command = "npm install && npm run build --workspace=@markaba/admin"
+  publish = "packages/admin/.next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
