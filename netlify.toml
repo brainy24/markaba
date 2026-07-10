@@ -15,11 +15,23 @@
   # src/generated/prisma-client, also gitignored, so that needs an explicit
   # generate step too — postinstall doesn't reliably fire per-schema across
   # multiple packages in an npm-workspaces monorepo.
-  command = "npm install && npm run build --workspace=@markaba/shared && npm run prisma:generate --workspace=@markaba/admin && npm run build --workspace=@markaba/admin"
+  #
+  # `rm -rf packages/admin/.next` first: Netlify restores a cached .next
+  # between builds for speed, but after a significant dependency change
+  # (confirmed: adding @netlify/database) that stale cache produced a
+  # corrupted build — every route failed to prerender with the same
+  # "<Html> should not be imported outside of pages/_document" /
+  # "Cannot read properties of null (reading 'useContext')" error. This repo
+  # is small enough that a guaranteed-clean build is worth more than the
+  # incremental-build speedup.
+  command = "rm -rf packages/admin/.next && npm install && npm run build --workspace=@markaba/shared && npm run prisma:generate --workspace=@markaba/admin && npm run build --workspace=@markaba/admin"
   publish = "packages/admin/.next"
 
 [build.environment]
-  NODE_VERSION = "20"
+  # Matches what @netlify/plugin-nextjs actually runs on — Netlify's build
+  # log explicitly warned when this was pinned to 20 ("the plugin cannot be
+  # executed with your defined Node.js version 20.20.2").
+  NODE_VERSION = "22"
 
 # This site has a fully custom base/command/publish (required for the npm
 # workspaces monorepo layout above), so Netlify does NOT auto-attach the
