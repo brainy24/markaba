@@ -17,11 +17,19 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# No explicit [[plugins]] entry for @netlify/plugin-nextjs: pinning it here
-# locked the build to a stale v4.41.6 runtime (Netlify's own build log flagged
-# this — latest is v5.15.12). Leaving it unset lets Netlify auto-detect Next.js
-# and manage the current runtime itself, which has much better support for App
-# Router Server Actions — the login form's `cookies().set()` + `redirect()`
-# inside a 'use server' action is exactly the kind of thing that improved
-# between those versions, and is the likely cause of Sign in silently failing
-# in production while working fine in local dev.
+# This site has a fully custom base/command/publish (required for the npm
+# workspaces monorepo layout above), so Netlify does NOT auto-attach the
+# Next.js runtime on its own — without this block, `.next` output is published
+# with no Functions/redirects wired up at all, so every route 404s (confirmed:
+# removing this entirely broke the site, not just Server Actions).
+#
+# The version is controlled via the root package.json devDependency instead of
+# a `version` field here (netlify.toml plugin blocks don't support pinning
+# directly) — Netlify Build prefers a plugin already present in node_modules
+# over its own bundled default. Previously this resolved to a stale v4.41.6
+# (Netlify's own build log flagged it — latest is v5.15.12), which likely
+# explains "Sign in" failing in production: the login form's Server Action
+# (`cookies().set()` + `redirect()` inside `'use server'`) needs the App
+# Router Server Actions support that improved significantly since v4.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
