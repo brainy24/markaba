@@ -7,11 +7,11 @@ import { applyMockTransition, recordVehiclePurchase } from '../../../lib/mock-da
 
 async function requireOperationsActor(): Promise<string> {
   const session = await auth();
-  const role = session?.user.role;
+  const role = session?.user?.role;
   if (!role || !OPERATIONS_VIEW_ROLES.includes(role)) {
     throw new Error('Only an Operations or CEO session may act on vehicle sourcing.');
   }
-  return session!.user.name ?? session!.user.email ?? 'unknown';
+  return session?.user?.name ?? session?.user?.email ?? 'unknown';
 }
 
 /** APPROVED -> VEHICLE_SOURCING. Not a credit decision — no approval token needed. */

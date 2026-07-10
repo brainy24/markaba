@@ -30,6 +30,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(adapterPrisma),
   callbacks: {
+    // Spread first: authConfig's `session` callback (the token->session.role
+    // mapping) is shared with middleware.ts's lightweight instance — see
+    // auth.config.ts. Only signIn/jwt (DB-touching) are added here.
+    ...authConfig.callbacks,
     async signIn({ user }) {
       if (!user.email) return false;
       const resolution = await resolveSignIn(prisma, user.email);
@@ -47,12 +51,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
       return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.role = token.role;
-      }
-      return session;
     },
   },
 });

@@ -19,8 +19,8 @@ export default async function ApplicationDetailPage({ params }: { params: { id: 
   }
 
   const session = await auth();
-  const role = session?.user.role;
-  const displayName = session?.user.name ?? session?.user.email ?? 'Unknown';
+  const role = session?.user?.role;
+  const displayName = session?.user?.name ?? session?.user?.email ?? 'Unknown';
   const canDecide = !!role && CREDIT_DECISION_ROLES.has(role);
   const canApprove = canTransition(application.state, 'APPROVED');
   const canDecline = canTransition(application.state, 'DECLINED');

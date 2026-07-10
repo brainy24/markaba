@@ -14,7 +14,7 @@ import {
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
-  const role = req.auth?.user.role;
+  const role = req.auth?.user?.role;
 
   if (!role) {
     const loginUrl = new URL('/login', req.url);

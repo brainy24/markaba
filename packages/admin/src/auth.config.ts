@@ -27,4 +27,18 @@ export default {
   // JWT, not database sessions — see docs/decisions/0002-admin-oauth-jwt-sessions.md.
   session: { strategy: 'jwt', maxAge: 60 * 60 * 8 },
   pages: { signIn: '/login' },
+  callbacks: {
+    // Pure token -> session shaping, no DB access — belongs here (not just
+    // auth.ts) so middleware.ts's own lightweight NextAuth(authConfig)
+    // instance also populates session.user.role when decoding the JWT.
+    // Without this here, middleware read a session shaped by Auth.js's
+    // default callback (no `role` field at all), not a missing-user crash
+    // as it first looked — a real gap, not just a missing null-check.
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.role = token.role;
+      }
+      return session;
+    },
+  },
 } satisfies NextAuthConfig;

@@ -12,11 +12,11 @@ function isRole(value: string): value is Role {
 
 async function requireSuperAdminActor(): Promise<string> {
   const session = await auth();
-  const role = session?.user.role;
+  const role = session?.user?.role;
   if (!role || !USER_MANAGEMENT_ROLES.includes(role)) {
     throw new Error('Only a SuperAdmin session may manage the admin user directory.');
   }
-  return session!.user.name ?? session!.user.email ?? 'unknown';
+  return session?.user?.name ?? session?.user?.email ?? 'unknown';
 }
 
 /**

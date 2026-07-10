@@ -27,12 +27,12 @@ function buildHumanApprovalToken(role: Role, actor: string): string {
 
 async function decide(applicationId: string, to: ApplicationState): Promise<void> {
   const session = await auth();
-  const role = session?.user.role;
+  const role = session?.user?.role;
   if (!role || !CREDIT_DECISION_ROLES.includes(role)) {
     throw new Error('Only a CreditAnalyst or CEO session may make a credit decision.');
   }
 
-  const actor = session!.user.name ?? session!.user.email ?? 'unknown';
+  const actor = session?.user?.name ?? session?.user?.email ?? 'unknown';
   const humanApprovalToken = buildHumanApprovalToken(role, actor);
   applyMockTransition(applicationId, to, actor, humanApprovalToken);
   redirect(`/dashboard/applications/${applicationId}`);

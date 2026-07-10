@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { auth } from '../../auth';
 import {
   COMPLIANCE_VIEW_ROLES,
@@ -10,10 +11,16 @@ import {
 import { adminSignOut } from './actions';
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
-  // Middleware already guarantees a session with a role exists for every
-  // /dashboard/* route — see middleware.ts.
+  // Middleware should already guarantee a session with a role for every
+  // /dashboard/* route — see middleware.ts. Defense in depth rather than a
+  // bare assertion: session shape can legitimately be incomplete (signed out
+  // mid-request, JWT decode edge cases), and this layout must never crash on
+  // it, just bounce to login instead.
   const session = await auth();
-  const role = session!.user.role!;
+  const role = session?.user?.role;
+  if (!role) {
+    redirect('/login');
+  }
 
   return (
     <div>
@@ -55,7 +62,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         </nav>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', fontSize: '0.85rem' }}>
           <span>
-            {session!.user.name ?? session!.user.email} · <span className="badge">{role}</span>
+            {session?.user?.name ?? session?.user?.email} ·{' '}
+            <span className="badge">{role}</span>
           </span>
           <form action={adminSignOut}>
             <button type="submit" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
