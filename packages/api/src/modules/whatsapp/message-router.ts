@@ -2,7 +2,36 @@ export type WhatsAppIntent = 'education' | 'start_application' | 'check_status' 
 
 const START_KEYWORDS = ['apply', 'start', 'start application'];
 const STATUS_KEYWORDS = ['status', 'check status'];
-const EDUCATION_KEYWORDS = ['faq', 'help', 'menu', 'ijarah', 'murabaha', 'sharia'];
+const EDUCATION_KEYWORDS = [
+  'faq',
+  'help',
+  'menu',
+  'ijarah',
+  'murabaha',
+  'sharia',
+  'loan',
+  'down payment',
+  'term',
+  'gps',
+  'tracker',
+  'takaful',
+  'insurance',
+  'document',
+  'pay off',
+  'early',
+  'miss a payment',
+  'late payment',
+  'guarantor',
+  'hausa',
+  'language',
+  'end of the term',
+  'ownership',
+  'kano',
+  'abuja',
+  'operate',
+  'referral',
+  'refer',
+];
 
 /**
  * Pure keyword router — no I/O, no credit logic, no PII handling. Just decides

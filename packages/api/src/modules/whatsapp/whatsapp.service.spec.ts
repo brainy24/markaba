@@ -38,6 +38,26 @@ describe('WhatsAppService', () => {
     expect(customers.create).not.toHaveBeenCalled();
   });
 
+  it('answers newer FAQ topics added alongside the original scaffold', async () => {
+    const downPayment = await service.handleMessage({
+      from: '+2348000000001',
+      text: 'how much is the down payment?',
+    });
+    expect(downPayment).toContain('20%');
+
+    const gps = await service.handleMessage({
+      from: '+2348000000001',
+      text: 'why is there a gps tracker?',
+    });
+    expect(gps).toMatch(/ownership/i);
+
+    const latePayment = await service.handleMessage({
+      from: '+2348000000001',
+      text: 'what if i miss a payment?',
+    });
+    expect(latePayment).toMatch(/interest/i);
+  });
+
   it('creates a new customer + application on "apply", using only the sender phone number', async () => {
     const reply = await service.handleMessage({ from: '+2348000000001', text: 'apply' });
 
