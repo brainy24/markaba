@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
-    "@netlify/database": "^1.1.0",
+    "@markaba/shared": "*",
     "@prisma/client": "^5.22.0",
     "next": "^14.2.18",
     "next-auth": "^5.0.0-beta.25",
