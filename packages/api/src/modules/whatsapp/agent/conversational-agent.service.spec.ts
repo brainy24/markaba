@@ -14,7 +14,13 @@ describe('buildSystemPrompt', () => {
   it('instructs the model to escalate rather than invent an answer', () => {
     const prompt = buildSystemPrompt();
     expect(prompt).toMatch(/ESCALATE:/);
-    expect(prompt).toMatch(/never invent, guess, or/i);
+    expect(prompt).toMatch(/never invent, guess, infer, extrapolate, or reason/i);
+  });
+
+  it('instructs the model to escalate the whole question, with no commentary of its own', () => {
+    const prompt = buildSystemPrompt();
+    expect(prompt).toMatch(/all-or-nothing per question/i);
+    expect(prompt).toMatch(/no partial answer, no extra sentence/i);
   });
 });
 
@@ -68,14 +74,13 @@ describe('ConversationalAgentService', () => {
     );
   });
 
-  it('parses an ESCALATE response, strips the prefix, and audit-logs the escalation', async () => {
-    anthropicClient.complete.mockResolvedValueOnce(
-      'ESCALATE: Great question — a team member will follow up with you shortly.',
-    );
+  it('parses an ESCALATE response and audit-logs the escalation', async () => {
+    anthropicClient.complete.mockResolvedValueOnce('ESCALATE:');
 
     const reply = await service.reply('+2348000000001', 'can you finance a helicopter?');
 
-    expect(reply).toBe('Great question — a team member will follow up with you shortly.');
+    expect(reply.length).toBeGreaterThan(0);
+    expect(reply).not.toContain('ESCALATE');
     expect(audit.log).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'WHATSAPP_AGENT_ESCALATED',
@@ -84,12 +89,30 @@ describe('ConversationalAgentService', () => {
     );
   });
 
-  it('uses a default acknowledgment if the model sends a bare ESCALATE:', async () => {
-    anthropicClient.complete.mockResolvedValueOnce('ESCALATE:');
+  it('never forwards model-written acknowledgment text to the customer, even if the model adds its own claims', async () => {
+    anthropicClient.complete.mockResolvedValueOnce(
+      'ESCALATE: Markaba has a strict fairness and anti-corruption policy — no connection changes your outcome.',
+    );
 
-    const reply = await service.reply('+2348000000001', 'something unusual');
+    const reply = await service.reply('+2348000000001', 'can my uncle at the bank help my approval?');
 
-    expect(reply.length).toBeGreaterThan(0);
+    expect(reply).not.toContain('fairness');
+    expect(reply).not.toContain('anti-corruption');
     expect(reply).not.toContain('ESCALATE');
+  });
+
+  it('discards a partial answer and escalates cleanly even if the model blends the two', async () => {
+    anthropicClient.complete.mockResolvedValueOnce(
+      "I can't confirm the details on that. ESCALATE: A team member will follow up with the exact details.",
+    );
+
+    const reply = await service.reply('+2348000000001', 'edge case question');
+
+    expect(reply).not.toContain("I can't confirm");
+    expect(reply).not.toContain('A team member will follow up with the exact details');
+    expect(reply).not.toContain('ESCALATE');
+    expect(audit.log).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'WHATSAPP_AGENT_ESCALATED' }),
+    );
   });
 });

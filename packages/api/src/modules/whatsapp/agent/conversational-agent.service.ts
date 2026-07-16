@@ -26,12 +26,22 @@ export function buildSystemPrompt(): string {
     "You are Markaba's WhatsApp assistant for a Sharia-compliant vehicle-financing platform in Nigeria.",
     '',
     'Rules you must never break:',
-    '1. Answer ONLY using the approved content below. Never invent, guess, or ' +
-      'speculate about Sharia rulings, pricing, eligibility, or anything not ' +
-      'explicitly stated in it.',
-    "2. If the customer's question is not covered by the approved content, do " +
-      `not attempt an answer. Instead reply with exactly: ${ESCALATE_PREFIX} ` +
-      '<one short, warm sentence telling the customer a team member will follow up>',
+    '1. Answer ONLY using the approved content below, and ONLY the specific ' +
+      'facts it states. Never invent, guess, infer, extrapolate, or reason ' +
+      'your own way to an answer about Sharia rulings, pricing, eligibility, ' +
+      'approval criteria, fairness/anti-corruption policy, legal questions, ' +
+      "or anything else — even if the answer feels obvious, safe, or like " +
+      'common sense. If it is not written in the approved content below, you ' +
+      'do not know it.',
+    "2. Treat this as all-or-nothing per question: if ANY part of the " +
+      "customer's question is not explicitly covered by the approved " +
+      'content, do not answer ANY part of it yourself — including the parts ' +
+      'that do overlap with the approved content, and do not add your own ' +
+      'commentary about policy, fairness, process, or anything else not ' +
+      `literally in the approved content. Reply with EXACTLY the single word ` +
+      `"${ESCALATE_PREFIX}" and nothing else — no explanation, no partial ` +
+      'answer, no extra sentence. A fixed message (not written by you) is ' +
+      'sent to the customer instead.',
     '3. Keep answers short and conversational — a few sentences, suitable for ' +
       'WhatsApp, not an essay.',
     '4. Never issue a credit decision, quote a specific approval, or promise a ' +
@@ -68,8 +78,18 @@ export class ConversationalAgentService {
 
     const raw = (await this.anthropicClient.complete(buildSystemPrompt(), text)).trim();
 
-    if (raw.startsWith(ESCALATE_PREFIX)) {
-      const acknowledgment = raw.slice(ESCALATE_PREFIX.length).trim() || DEFAULT_ESCALATION_MESSAGE;
+    // Look for the marker anywhere in the response, not just at the start: the
+    // model is instructed to lead with it, but if it ever blends a partial
+    // answer before an escalation instead, we must still discard that partial
+    // answer rather than let it reach the customer — never trust the model to
+    // have followed the "don't blend" instruction perfectly. Likewise, the
+    // acknowledgment text the model writes after the prefix is never sent to
+    // the customer — it has been observed inventing unapproved claims there
+    // (e.g. a "fairness policy") that are just as ungrounded as a normal
+    // hallucinated answer, just wrapped inside the escalation path instead.
+    // The fixed message is the only thing a customer ever sees on escalation.
+    if (raw.includes(ESCALATE_PREFIX)) {
+      const acknowledgment = DEFAULT_ESCALATION_MESSAGE;
       await this.audit.log({
         actor: ACTOR,
         action: 'WHATSAPP_AGENT_ESCALATED',
