@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { CustomersService } from '../customers/customers.service';
 import { ApplicationsService } from '../applications/applications.service';
+import { ConversationalAgentService } from './agent/conversational-agent.service';
 import { WhatsAppService } from './whatsapp.service';
 
 describe('WhatsAppService', () => {
@@ -10,6 +11,7 @@ describe('WhatsAppService', () => {
     create: jest.Mock;
     findLatestByCustomer: jest.Mock;
   };
+  let agent: { reply: jest.Mock };
 
   beforeEach(async () => {
     customers = {
@@ -20,42 +22,40 @@ describe('WhatsAppService', () => {
       create: jest.fn(() => Promise.resolve({ id: 'app-1', state: 'SUBMITTED' })),
       findLatestByCustomer: jest.fn(() => Promise.resolve(null)),
     };
+    agent = { reply: jest.fn(() => Promise.resolve('Ijarah is a lease-to-own arrangement.')) };
 
     const moduleRef = await Test.createTestingModule({
       providers: [
         WhatsAppService,
         { provide: CustomersService, useValue: customers },
         { provide: ApplicationsService, useValue: applications },
+        { provide: ConversationalAgentService, useValue: agent },
       ],
     }).compile();
 
     service = moduleRef.get(WhatsAppService);
   });
 
-  it('answers education questions from the static FAQ content, no PII involved', async () => {
+  it('delegates education questions to the conversational agent, no PII involved', async () => {
     const reply = await service.handleMessage({ from: '+2348000000001', text: 'what is ijarah?' });
-    expect(reply).toContain('lease-to-own');
+
+    expect(agent.reply).toHaveBeenCalledWith('+2348000000001', 'what is ijarah?');
+    expect(reply).toBe('Ijarah is a lease-to-own arrangement.');
     expect(customers.create).not.toHaveBeenCalled();
   });
 
-  it('answers newer FAQ topics added alongside the original scaffold', async () => {
-    const downPayment = await service.handleMessage({
-      from: '+2348000000001',
-      text: 'how much is the down payment?',
-    });
-    expect(downPayment).toContain('20%');
+  it('delegates an unrecognised message to the conversational agent too', async () => {
+    const reply = await service.handleMessage({ from: '+2348000000001', text: 'good morning' });
 
-    const gps = await service.handleMessage({
-      from: '+2348000000001',
-      text: 'why is there a gps tracker?',
-    });
-    expect(gps).toMatch(/ownership/i);
+    expect(agent.reply).toHaveBeenCalledWith('+2348000000001', 'good morning');
+    expect(reply).toBe('Ijarah is a lease-to-own arrangement.');
+  });
 
-    const latePayment = await service.handleMessage({
-      from: '+2348000000001',
-      text: 'what if i miss a payment?',
-    });
-    expect(latePayment).toMatch(/interest/i);
+  it('never lets the conversational agent trigger apply/status itself', async () => {
+    await service.handleMessage({ from: '+2348000000001', text: 'what is ijarah?' });
+
+    expect(applications.create).not.toHaveBeenCalled();
+    expect(applications.findLatestByCustomer).not.toHaveBeenCalled();
   });
 
   it('creates a new customer + application on "apply", using only the sender phone number', async () => {
@@ -71,6 +71,7 @@ describe('WhatsAppService', () => {
     );
     expect(reply).toContain('app-1');
     expect(reply).toContain('SUBMITTED');
+    expect(agent.reply).not.toHaveBeenCalled();
   });
 
   it('reuses an existing customer record instead of creating a duplicate', async () => {
@@ -94,15 +95,11 @@ describe('WhatsAppService', () => {
 
     const reply = await service.handleMessage({ from: '+2348000000001', text: 'status' });
     expect(reply).toContain('UNDERWRITING');
+    expect(agent.reply).not.toHaveBeenCalled();
   });
 
   it('tells a customer with no record to apply first when checking status', async () => {
     const reply = await service.handleMessage({ from: '+2348000000001', text: 'status' });
     expect(reply).toMatch(/apply/i);
-  });
-
-  it('falls back to the menu for an unrecognised message', async () => {
-    const reply = await service.handleMessage({ from: '+2348000000001', text: 'good morning' });
-    expect(reply).toMatch(/didn't understand/i);
   });
 });

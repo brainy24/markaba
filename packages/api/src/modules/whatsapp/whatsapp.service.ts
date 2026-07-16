@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CustomersService } from '../customers/customers.service';
 import { ApplicationsService } from '../applications/applications.service';
-import { FAQ_CONTENT, FAQ_MENU_TEXT } from './content/faq.content';
+import { ConversationalAgentService } from './agent/conversational-agent.service';
 import { routeIntent } from './message-router';
 
 export interface InboundWhatsAppMessage {
@@ -23,6 +23,7 @@ export class WhatsAppService {
   constructor(
     private readonly customers: CustomersService,
     private readonly applications: ApplicationsService,
+    private readonly agent: ConversationalAgentService,
   ) {}
 
   /**
@@ -30,29 +31,24 @@ export class WhatsAppService {
    * Sharia ruling, and no real personal data leaves the system here — customer
    * creation and application creation use only what the customer themselves sent
    * over this channel (CLAUDE.md §2.1, §2.2).
+   *
+   * `education`/`unknown` both go to the conversational agent — it only
+   * converses, it never triggers `start_application`/`check_status` itself
+   * (CLAUDE.md §2.3: those stay deterministic, keyword-routed, human-auditable).
    */
   async handleMessage(message: InboundWhatsAppMessage): Promise<string> {
     const intent = routeIntent(message.text);
 
     switch (intent) {
-      case 'education':
-        return this.handleEducation(message.text);
       case 'start_application':
         return this.handleStartApplication(message.from);
       case 'check_status':
         return this.handleCheckStatus(message.from);
+      case 'education':
       case 'unknown':
       default:
-        return `I didn't understand that. ${FAQ_MENU_TEXT}. Or reply "apply" or "status".`;
+        return this.agent.reply(message.from, message.text);
     }
-  }
-
-  private handleEducation(text: string): string {
-    const normalized = text.trim().toLowerCase();
-    const match = FAQ_CONTENT.find((entry) =>
-      normalized.includes(entry.question.toLowerCase().replace('?', '')),
-    );
-    return match ? match.answer : FAQ_MENU_TEXT;
   }
 
   private async handleStartApplication(from: string): Promise<string> {
