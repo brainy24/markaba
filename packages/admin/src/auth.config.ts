@@ -3,6 +3,36 @@ import Google from 'next-auth/providers/google';
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
 
 /**
+ * Auth.js validates every registered provider's config at request time —
+ * an OAuth provider registered with an undefined clientId/clientSecret/issuer
+ * fails validation and surfaces as a generic `?error=Configuration`, even
+ * when the customer is signing in with a *different* provider entirely. Only
+ * register Microsoft Entra ID once its env vars are actually set, so
+ * deployments that only use Google don't need Microsoft placeholders just to
+ * pass validation.
+ */
+const providers: NextAuthConfig['providers'] = [
+  Google({
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  }),
+];
+
+if (
+  process.env.MICROSOFT_ENTRA_CLIENT_ID &&
+  process.env.MICROSOFT_ENTRA_CLIENT_SECRET &&
+  process.env.MICROSOFT_ENTRA_TENANT_ID
+) {
+  providers.push(
+    MicrosoftEntraID({
+      clientId: process.env.MICROSOFT_ENTRA_CLIENT_ID,
+      clientSecret: process.env.MICROSOFT_ENTRA_CLIENT_SECRET,
+      issuer: `https://login.microsoftonline.com/${process.env.MICROSOFT_ENTRA_TENANT_ID}/v2.0`,
+    }),
+  );
+}
+
+/**
  * Edge-safe subset of the Auth.js config — no Prisma adapter, no database
  * access, importable from middleware.ts (Edge runtime) without dragging
  * Prisma's native query engine into that bundle. `auth.ts` (Node.js
@@ -10,19 +40,7 @@ import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
  * and adds the Prisma adapter + DB-touching callbacks on top.
  */
 export default {
-  providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
-    MicrosoftEntraID({
-      clientId: process.env.MICROSOFT_ENTRA_CLIENT_ID,
-      clientSecret: process.env.MICROSOFT_ENTRA_CLIENT_SECRET,
-      issuer: process.env.MICROSOFT_ENTRA_TENANT_ID
-        ? `https://login.microsoftonline.com/${process.env.MICROSOFT_ENTRA_TENANT_ID}/v2.0`
-        : undefined,
-    }),
-  ],
+  providers,
   secret: process.env.NEXTAUTH_SECRET,
   // JWT, not database sessions — see docs/decisions/0002-admin-oauth-jwt-sessions.md.
   session: { strategy: 'jwt', maxAge: 60 * 60 * 8 },
